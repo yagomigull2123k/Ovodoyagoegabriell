@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Caça ao Tesouro</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding-top: 20px;
+        }
+
+        #mapa-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #mapa {
+            width: 500px;
+            height: auto;
+            border: 2px solid #555;
+            cursor: pointer;
+        }
+
+        #mensagem {
+            font-size: 1.5rem;
+            margin-top: 20px;
+        }
+
+        #imagem-tesouro {
+            display: none; /* Esconde a imagem inicialmente */
+            margin-top: 20px;
+            width: 100px; /* Ajuste o tamanho da imagem do tesouro */
+        }
+    </style>
+</head>
+<body>
+    <h1>Caça ao Tesouro</h1>
+    <p>Encontre o tesouro escondido no mapa!</p>
+    <div id="mapa-container">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA4mkVy_9KuORRLl0nbUJQOZBO9LxYbGzN50k13Mggmgwy2tfePcnIazyA&s=10" alt="Mapa" id="mapa">
+    </div>
+    <p id="mensagem"></p>
+    <img src="/storage/emulated/0/DCIM/Camera/IMG-20241007-WA0006.jpg" alt="Tesouro" id="imagem-tesouro"> <!-- Imagem do tesouro -->
+
+    <script>
+        // Variáveis para armazenar o tamanho do mapa e a posição do tesouro
+        const larguraMapa = 500;
+        const alturaMapa = 281; // Proporção da imagem usada
+        const tesouro = {
+            x: Math.floor(Math.random() * larguraMapa),
+            y: Math.floor(Math.random() * alturaMapa)
+        };
+
+        const mapa = document.getElementById('mapa');
+        const mensagem = document.getElementById('mensagem');
+        const imagemTesouro = document.getElementById('imagem-tesouro');
+
+        // Função para calcular a distância entre o clique e o tesouro
+        function calcularDistancia(event) {
+            const xClique = event.offsetX;
+            const yClique = event.offsetY;
+            const difX = xClique - tesouro.x;
+            const difY = yClique - tesouro.y;
+            return Math.sqrt((difX * difX) + (difY * difY));
+        }
+
+        // Função para dar dicas ao jogador com base na distância
+        function obterDica(distancia) {
+            if (distancia < 20) return "Muito quente!";
+            if (distancia < 50) return "Quente!";
+            if (distancia < 100) return "Morno.";
+            if (distancia < 200) return "Frio.";
+            return "Muito frio!";
+        }
+
+        // Evento para capturar o clique no mapa
+        mapa.addEventListener('click', function (event) {
+            const distancia = calcularDistancia(event);
+            const dica = obterDica(distancia);
+            mensagem.textContent = dica;
+
+            // Se a distância for menor que 10 pixels, o jogador venceu!
+            if (distancia < 10) {
+                mensagem.textContent = "Você encontrou o tesouro!";
+                imagemTesouro.style.display = 'block'; // Exibe a imagem do tesouro
+            }
+        });
+    </script>
+</body>
+</html>
