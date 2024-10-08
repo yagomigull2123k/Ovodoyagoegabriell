@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encontre o Ovo na Laguna</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            touch-action: none; /* Desativa o comportamento padrão de toque */
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        #game-area {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            border: 2px solid #4CAF50;
+            margin: 20px auto;
+            overflow: hidden;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Laguna_Beach_CA.jpg/1920px-Laguna_Beach_CA.jpg') no-repeat center center; /* Imagem de Laguna */
+            background-size: cover;
+        }
+
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            border-radius: 50%;
+        }
+
+        #egg {
+            position: absolute;
+            width: 15px; /* Tamanho do ovo */
+            height: 15px; /* Tamanho do ovo */
+            background-color: yellow;
+            border-radius: 50%;
+            display: none; /* Ovo inicialmente invisível */
+        }
+
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none; /* Desativa o comportamento padrão de toque */
+        }
+
+        #joystick-inner {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+            position: relative;
+            pointer-events: none; /* Desativa interações no botão do joystick */
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Encontre o Ovo na Laguna!</h1>
+        <p>Eu escondi um ovo em algum lugar da cidade de Laguna. Você consegue encontrá-lo?</p>
+    </header>
+    <main>
+        <section id="game-area">
+            <div id="player"></div>
+            <div id="egg"></div>
+            <div id="joystick" ontouchstart="startTouch(event)" ontouchend="endTouch()">
+                <div id="joystick-inner"></div>
+            </div>
+        </section>
+        <section>
+            <h2>Dicas</h2>
+            <ul>
+                <li>O ovo está escondido perto de um local famoso.</li>
+                <li>Preste atenção nas pistas!</li>
+                <li>Leve um amigo para ajudar na busca!</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Como Participar</h2>
+            <p>Use o joystick para se mover e encontrar o ovo!</p>
+        </section>
+    </main>
+    <footer>
+        <p>Divirta-se e boa sorte!</p>
+    </footer>
+    <script>
+        const player = document.getElementById("player");
+        const egg = document.getElementById("egg");
+        const gameArea = document.getElementById("game-area");
+        const joystick = document.getElementById("joystick");
+        const joystickInner = document.getElementById("joystick-inner");
+
+        let playerPosition = { top: 185, left: 285 };
+        let joystickActive = false;
+
+        function placeEgg() {
+            const top = Math.random() * (gameArea.clientHeight - 15); // Ajuste para o tamanho do ovo
+            const left = Math.random() * (gameArea.clientWidth - 15); // Ajuste para o tamanho do ovo
+            egg.style.top = `${top}px`;
+            egg.style.left = `${left}px`;
+            egg.style.display = "none"; // Manter ovo invisível
+        }
+
+        // Colocar o ovo inicialmente
+        placeEgg();
+
+        function startTouch(event) {
+            joystickActive = true;
+            moveJoystick(event);
+        }
+
+        function endTouch() {
+            joystickActive = false;
+            joystickInner.style.transform = "translate(0, 0)";
+            playerPosition = { top: playerPosition.top, left: playerPosition.left }; // Para parar o movimento
+        }
+
+        function moveJoystick(event) {
+            const touch = event.touches[0];
+            const joystickRect = joystick.getBoundingClientRect();
+            const offsetX = touch.clientX - joystickRect.left - joystickRect.width / 2;
+            const offsetY = touch.clientY - joystickRect.top - joystickRect.height / 2;
+
+            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+            const angle = Math.atan2(offsetY, offsetX);
+
+            if (distance > 50) {
+                offsetX = 50 * Math.cos(angle);
+                offsetY = 50 * Math.sin(angle);
+            }
+
+            joystickInner.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+            // Movimentar o jogador com base na direção do joystick
+            movePlayer(offsetX, offsetY);
+        }
+
+        joystick.addEventListener("touchmove", (event) => {
+            if (joystickActive) {
+                moveJoystick(event);
+            }
+        });
+
+        function movePlayer(offsetX, offsetY) {
+            if (offsetX > 0) playerPosition.left += 2; // Move para a direita
+            else if (offsetX < 0) playerPosition.left -= 2; // Move para a esquerda
+
+            if (offsetY > 0) playerPosition.top += 2; // Move para baixo
+            else if (offsetY < 0) playerPosition.top -= 2; // Move para cima
+
+            updatePlayerPosition();
+            checkCollision();
+        }
+
+        function updatePlayerPosition() {
+            player.style.top = `${playerPosition.top}px`;
+            player.style.left = `${playerPosition.left}px`;
+        }
+
+        function checkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            const eggRect = egg.getBoundingClientRect();
+            if (
+                playerRect.x < eggRect.x + eggRect.width &&
+                playerRect.x + playerRect.width > eggRect.x &&
+                playerRect.y < eggRect.y + eggRect.height &&
+                playerRect.y + playerRect.height > eggRect.y
+            ) {
+                alert("Você encontrou o ovo!");
+                placeEgg(); // Recolocar ovo em um novo local
+                playerPosition = { top: 185, left: 285 }; // Resetar a posição do jogador
+                updatePlayerPosition();
+            }
+        }
+    </script>
+</body>
+</html>
