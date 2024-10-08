@@ -1,93 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo Caça ao Tesouro</title>
+    <title>Encontre o Ovo na Laguna</title>
     <style>
         body {
-            text-align: center;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            padding-top: 20px;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            touch-action: none; /* Desativa o comportamento padrão de toque */
         }
 
-        #mapa-container {
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        #game-area {
             position: relative;
-            display: inline-block;
+            width: 600px;
+            height: 400px;
+            border: 2px solid #4CAF50;
+            margin: 20px auto;
+            overflow: hidden;
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR89Tp71aQHjFfc2zjBnk5Nf4BNj7Q2y4QbVA&s') no-repeat center center; /* Imagem de Laguna */
+            background-size: cover;
         }
 
-        #mapa {
-            width: 500px;
-            height: auto;
-            border: 2px solid #555;
-            cursor: pointer;
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            border-radius: 50%;
         }
 
-        #mensagem {
-            font-size: 1.5rem;
-            margin-top: 20px;
+        #egg {
+            position: absolute;
+            width: 15px; /* Tamanho do ovo */
+            height: 15px; /* Tamanho do ovo */
+            background-color: yellow;
+            border-radius: 50%;
+            display: none; /* Ovo inicialmente invisível */
         }
 
-        #imagem-tesouro {
-            display: none; /* Esconde a imagem inicialmente */
-            margin-top: 20px;
-            width: 100px; /* Ajuste o tamanho da imagem do tesouro */
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none; /* Desativa o comportamento padrão de toque */
+        }
+
+        #joystick-inner {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+            position: relative;
+            pointer-events: none; /* Desativa interações no botão do joystick */
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #4CAF50;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <h1>Caça ao Tesouro</h1>
-    <p>Encontre o tesouro escondido no mapa!</p>
-    <div id="mapa-container">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA4mkVy_9KuORRLl0nbUJQOZBO9LxYbGzN50k13Mggmgwy2tfePcnIazyA&s=10" alt="Mapa" id="mapa">
-    </div>
-    <p id="mensagem"></p>
-    <img src="/storage/emulated/0/DCIM/Camera/IMG-20241007-WA0006.jpg" alt="Tesouro" id="imagem-tesouro"> <!-- Imagem do tesouro -->
-
+    <header>
+        <h1>Encontre o Ovo na Laguna!</h1>
+        <p>Eu escondi um ovo em algum lugar da cidade de Laguna. Você consegue encontrá-lo?</p>
+    </header>
+    <main>
+        <section id="game-area">
+            <div id="player"></div>
+            <div id="egg"></div>
+            <div id="joystick" ontouchstart="startTouch(event)" ontouchend="endTouch()">
+                <div id="joystick-inner"></div>
+            </div>
+        </section>
+        <section>
+            <h2>Dicas</h2>
+            <ul>
+                <li>O ovo está escondido perto de um local famoso.</li>
+                <li>Preste atenção nas pistas!</li>
+                <li>Leve um amigo para ajudar na busca!</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Como Participar</h2>
+            <p>Use o joystick para se mover e encontrar o ovo!</p>
+        </section>
+    </main>
+    <footer>
+        <p>Divirta-se e boa sorte!</p>
+    </footer>
     <script>
-        // Variáveis para armazenar o tamanho do mapa e a posição do tesouro
-        const larguraMapa = 500;
-        const alturaMapa = 281; // Proporção da imagem usada
-        const tesouro = {
-            x: Math.floor(Math.random() * larguraMapa),
-            y: Math.floor(Math.random() * alturaMapa)
-        };
+        const player = document.getElementById("player");
+        const egg = document.getElementById("egg");
+        const gameArea = document.getElementById("game-area");
+        const joystick = document.getElementById("joystick");
+        const joystickInner = document.getElementById("joystick-inner");
 
-        const mapa = document.getElementById('mapa');
-        const mensagem = document.getElementById('mensagem');
-        const imagemTesouro = document.getElementById('imagem-tesouro');
+        let playerPosition = { top: 185, left: 285 };
+        let joystickActive = false;
 
-        // Função para calcular a distância entre o clique e o tesouro
-        function calcularDistancia(event) {
-            const xClique = event.offsetX;
-            const yClique = event.offsetY;
-            const difX = xClique - tesouro.x;
-            const difY = yClique - tesouro.y;
-            return Math.sqrt((difX * difX) + (difY * difY));
+        function placeEgg() {
+            const top = Math.random() * (gameArea.clientHeight - 15); // Ajuste para o tamanho do ovo
+            const left = Math.random() * (gameArea.clientWidth - 15); // Ajuste para o tamanho do ovo
+            egg.style.top = `${top}px`;
+            egg.style.left = `${left}px`;
+            egg.style.display = "none"; // Manter ovo invisível
         }
 
-        // Função para dar dicas ao jogador com base na distância
-        function obterDica(distancia) {
-            if (distancia < 20) return "Muito quente!";
-            if (distancia < 50) return "Quente!";
-            if (distancia < 100) return "Morno.";
-            if (distancia < 200) return "Frio.";
-            return "Muito frio!";
+        // Colocar o ovo inicialmente
+        placeEgg();
+
+        function startTouch(event) {
+            joystickActive = true;
+            moveJoystick(event);
         }
 
-        // Evento para capturar o clique no mapa
-        mapa.addEventListener('click', function (event) {
-            const distancia = calcularDistancia(event);
-            const dica = obterDica(distancia);
-            mensagem.textContent = dica;
+        function endTouch() {
+            joystickActive = false;
+            joystickInner.style.transform = "translate(0, 0)";
+            playerPosition = { top: playerPosition.top, left: playerPosition.left }; // Para parar o movimento
+        }
 
-            // Se a distância for menor que 10 pixels, o jogador venceu!
-            if (distancia < 10) {
-                mensagem.textContent = "Você encontrou o tesouro!";
-                imagemTesouro.style.display = 'block'; // Exibe a imagem do tesouro
+        function moveJoystick(event) {
+            const touch = event.touches[0];
+            const joystickRect = joystick.getBoundingClientRect();
+            const offsetX = touch.clientX - joystickRect.left - joystickRect.width / 2;
+            const offsetY = touch.clientY - joystickRect.top - joystickRect.height / 2;
+
+            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+            const angle = Math.atan2(offsetY, offsetX);
+
+            if (distance > 50) {
+                offsetX = 50 * Math.cos(angle);
+                offsetY = 50 * Math.sin(angle);
+            }
+
+            joystickInner.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+            // Movimentar o jogador com base na direção do joystick
+            movePlayer(offsetX, offsetY);
+        }
+
+        joystick.addEventListener("touchmove", (event) => {
+            if (joystickActive) {
+                moveJoystick(event);
             }
         });
+
+        function movePlayer(offsetX, offsetY) {
+            if (offsetX > 0) playerPosition.left += 2; // Move para a direita
+            else if (offsetX < 0) playerPosition.left -= 2; // Move para a esquerda
+
+            if (offsetY > 0) playerPosition.top += 2; // Move para baixo
+            else if (offsetY < 0) playerPosition.top -= 2; // Move para cima
+
+            updatePlayerPosition();
+            checkCollision();
+        }
+
+        function updatePlayerPosition() {
+            player.style.top = `${playerPosition.top}px`;
+            player.style.left = `${playerPosition.left}px`;
+        }
+
+        function checkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            const eggRect = egg.getBoundingClientRect();
+            if (
+                playerRect.x < eggRect.x + eggRect.width &&
+                playerRect.x + playerRect.width > eggRect.x &&
+                playerRect.y < eggRect.y + eggRect.height &&
+                playerRect.y + playerRect.height > eggRect.y
+            ) {
+                alert("Você encontrou o ovo!");
+                placeEgg(); // Recolocar ovo em um novo local
+                playerPosition = { top: 185, left: 285 }; // Resetar a posição do jogador
+                updatePlayerPosition();
+            }
+        }
     </script>
 </body>
 </html>
