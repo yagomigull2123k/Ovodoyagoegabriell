@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encontre o Ovo na Laguna</title>
+    <title>Vitor foi pra uma festa escondido o encontre</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,19 +21,20 @@
             color: white;
             padding: 10px 0;
             text-align: center;
-            width: 100%; 
+            width: 100%;
         }
 
         main {
             padding: 20px;
             width: 100%;
-            max-width: 400px;
+            max-width: 600px;
         }
 
         #game-area {
             position: relative;
-            width: 100%; 
+            width: 100%;
             height: 60vh;
+            max-width: 900px;
             border: 2px solid #4CAF50;
             margin: 20px auto;
             overflow: hidden;
@@ -43,25 +44,33 @@
 
         #player {
             position: absolute;
-            width: 30px;
-            height: 30px;
+            width: 20px; 
+            height: 20px; 
             background-color: blue;
             border-radius: 50%;
         }
 
         #egg {
             position: absolute;
-            width: 15px;
-            height: 15px;
+            width: 0px; /* Tamanho aumentado do ovo */
+            height: 0px; /* Tamanho aumentado do ovo */
             background-color: yellow;
             border-radius: 50%;
-            visibility: hidden; /* Ovo permanece invisível */
+            visibility: hidden; 
+        }
+
+        .obstacle {
+            position: absolute;
+            background-color: red;
+            border-radius: 5px;
+            width: 10px; 
+            height: 10px; 
         }
 
         #joystick {
             position: absolute;
             bottom: 20px;
-            left: 50%; 
+            left: 50%;
             transform: translateX(-50%);
             width: 80px;
             height: 80px;
@@ -79,15 +88,7 @@
             background-color: white;
             border-radius: 50%;
             position: relative;
-            transition: transform 0.1s ease; /* Animação suave */
-        }
-
-        footer {
-            text-align: center;
-            padding: 10px 0;
-            background-color: #4CAF50;
-            color: white;
-            width: 100%;
+            transition: transform 0.1s ease;
         }
 
         #win-message {
@@ -97,12 +98,20 @@
             font-weight: bold;
             text-align: center;
         }
+
+        #timer {
+            color: red;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Encontre o Ovo na Laguna!</h1>
-        <p>Eu escondi um ovo em algum lugar da cidade de Laguna. Você consegue encontrá-lo?</p>
+        <h1>Encontre o vitor antes que ele beba refrigerante</h1>
+        <h7>segue eu no insta @vitinho_da_quebrada_801</h7>
     </header>
     <main>
         <section id="game-area">
@@ -111,12 +120,13 @@
             <div id="joystick" ontouchstart="startTouch(event)" ontouchmove="moveTouch(event)" ontouchend="endTouch()">
                 <div id="joystick-inner"></div>
             </div>
+            <div id="obstacle1" class="obstacle" style="top: 100px; left: 200px;"></div>
+            <div id="obstacle2" class="obstacle" style="top: 300px; left: 400px;"></div>
+            <div id="obstacle3" class="obstacle" style="top: 150px; left: 600px;"></div>
         </section>
         <div id="win-message">Parabéns! Você encontrou o ovo!</div>
+        <div id="timer">Tempo: <span id="time-left">10</span> segundos</div>
     </main>
-    <footer>
-        <p>Divirta-se e boa sorte!</p>
-    </footer>
 
     <script>
         const player = document.getElementById("player");
@@ -124,18 +134,40 @@
         const gameArea = document.getElementById("game-area");
         const winMessage = document.getElementById("win-message");
         const joystickInner = document.getElementById("joystick-inner");
+        const timerElement = document.getElementById("time-left");
 
-        let playerX = 50, playerY = 50; 
-        let moveSpeed = 2; // Aumentei a velocidade de 1 para 2
-        let joystickActive = false;
+        let playerX = 0, playerY = 0; 
+        let moveSpeed = 2; 
         let eggFound = false;
+        let timer = 10; 
+        let timerInterval;
+
+        // Posiciona o ovo aleatoriamente
+        function placeHiddenEgg() {
+            const randomX = Math.random() * (gameArea.clientWidth - egg.clientWidth);
+            const randomY = Math.random() * (gameArea.clientHeight - egg.clientHeight);
+            egg.style.left = randomX + "px";
+            egg.style.top = randomY + "px";
+            egg.style.visibility = "visible"; // Torna o ovo visível
+        }
+
+        // Inicia o timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer--;
+                timerElement.innerText = timer;
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Tempo esgotado! Você não encontrou o ovo.");
+                }
+            }, 1000);
+        }
 
         // Movimenta o jogador
         function movePlayer(dx, dy) {
             playerX += dx;
             playerY += dy;
 
-            // Limita o jogador para que ele não saia da tela
             if (playerX < 0) playerX = 0;
             if (playerX > gameArea.clientWidth - player.clientWidth) playerX = gameArea.clientWidth - player.clientWidth;
             if (playerY < 0) playerY = 0;
@@ -168,7 +200,8 @@
                 movePlayer(dx, dy);
 
                 // Move o joystick interno conforme o toque
-                joystickInner.style.transform = `translate(${deltaX / 2}px, ${deltaY / 2}px)`;
+                const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), 20); // Limita o movimento do joystick interno
+                joystickInner.style.transform = `translate(${distance * Math.cos(angle) / 2}px, ${distance * Math.sin(angle) / 2}px)`;
             }
         }
 
@@ -176,14 +209,6 @@
         function endTouch() {
             joystickActive = false;
             joystickInner.style.transform = `translate(0, 0)`; // Volta para o centro
-        }
-
-        // Posiciona o ovo aleatoriamente, mas o mantém invisível
-        function placeHiddenEgg() {
-            const randomX = Math.random() * (gameArea.clientWidth - egg.clientWidth);
-            const randomY = Math.random() * (gameArea.clientHeight - egg.clientHeight);
-            egg.style.left = randomX + "px";
-            egg.style.top = randomY + "px";
         }
 
         // Verifica se o jogador encontrou o ovo
@@ -200,16 +225,19 @@
                 if (!eggFound) {
                     eggFound = true;
                     winMessage.style.display = "block"; 
+                    clearInterval(timerInterval); 
+                    alert("Você encontrou o ovo! Parabéns!");
                 }
             }
         }
 
         // Inicializa o jogo
-        function startGame() {
-            placeHiddenEgg(); 
+        function initGame() {
+            placeHiddenEgg();
+            startTimer();
         }
 
-        startGame(); // Inicia o jogo
+        initGame();
     </script>
 </body>
 </html>
