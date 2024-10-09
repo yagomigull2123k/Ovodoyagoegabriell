@@ -10,7 +10,10 @@
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
-            touch-action: none; /* Desativa o comportamento padrão de toque */
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         header {
@@ -18,20 +21,23 @@
             color: white;
             padding: 10px 0;
             text-align: center;
+            width: 100%; 
         }
 
         main {
             padding: 20px;
+            width: 100%;
+            max-width: 400px;
         }
 
         #game-area {
             position: relative;
-            width: 600px;
-            height: 400px;
+            width: 100%; 
+            height: 60vh;
             border: 2px solid #4CAF50;
             margin: 20px auto;
             overflow: hidden;
-            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR89Tp71aQHjFfc2zjBnk5Nf4BNj7Q2y4QbVA&s') no-repeat center center; /* Imagem de Laguna */
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR89Tp71aQHjFfc2zjBnk5Nf4BNj7Q2y4QbVA&s') no-repeat center center;
             background-size: cover;
         }
 
@@ -45,34 +51,35 @@
 
         #egg {
             position: absolute;
-            width: 15px; /* Tamanho do ovo */
-            height: 15px; /* Tamanho do ovo */
+            width: 15px;
+            height: 15px;
             background-color: yellow;
             border-radius: 50%;
-            display: none; /* Ovo inicialmente invisível */
+            visibility: hidden; /* Ovo permanece invisível */
         }
 
         #joystick {
             position: absolute;
             bottom: 20px;
-            left: 20px;
-            width: 100px;
-            height: 100px;
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
             background-color: rgba(0, 0, 0, 0.5);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            touch-action: none; /* Desativa o comportamento padrão de toque */
+            touch-action: none; 
         }
 
         #joystick-inner {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             background-color: white;
             border-radius: 50%;
             position: relative;
-            pointer-events: none; /* Desativa interações no botão do joystick */
+            transition: transform 0.1s ease; /* Animação suave */
         }
 
         footer {
@@ -80,6 +87,15 @@
             padding: 10px 0;
             background-color: #4CAF50;
             color: white;
+            width: 100%;
+        }
+
+        #win-message {
+            display: none;
+            color: green;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
         }
     </style>
 </head>
@@ -92,115 +108,108 @@
         <section id="game-area">
             <div id="player"></div>
             <div id="egg"></div>
-            <div id="joystick" ontouchstart="startTouch(event)" ontouchend="endTouch()">
+            <div id="joystick" ontouchstart="startTouch(event)" ontouchmove="moveTouch(event)" ontouchend="endTouch()">
                 <div id="joystick-inner"></div>
             </div>
         </section>
-        <section>
-            <h2>Dicas</h2>
-            <ul>
-                <li>O ovo está escondido perto de um local famoso.</li>
-                <li>Preste atenção nas pistas!</li>
-                <li>Leve um amigo para ajudar na busca!</li>
-            </ul>
-        </section>
-        <section>
-            <h2>Como Participar</h2>
-            <p>Use o joystick para se mover e encontrar o ovo!</p>
-        </section>
+        <div id="win-message">Parabéns! Você encontrou o ovo!</div>
     </main>
     <footer>
         <p>Divirta-se e boa sorte!</p>
     </footer>
+
     <script>
         const player = document.getElementById("player");
         const egg = document.getElementById("egg");
         const gameArea = document.getElementById("game-area");
-        const joystick = document.getElementById("joystick");
+        const winMessage = document.getElementById("win-message");
         const joystickInner = document.getElementById("joystick-inner");
 
-        let playerPosition = { top: 185, left: 285 };
+        let playerX = 50, playerY = 50; 
+        let moveSpeed = 2; // Aumentei a velocidade de 1 para 2
         let joystickActive = false;
+        let eggFound = false;
 
-        function placeEgg() {
-            const top = Math.random() * (gameArea.clientHeight - 15); // Ajuste para o tamanho do ovo
-            const left = Math.random() * (gameArea.clientWidth - 15); // Ajuste para o tamanho do ovo
-            egg.style.top = `${top}px`;
-            egg.style.left = `${left}px`;
-            egg.style.display = "none"; // Manter ovo invisível
-        }
+        // Movimenta o jogador
+        function movePlayer(dx, dy) {
+            playerX += dx;
+            playerY += dy;
 
-        // Colocar o ovo inicialmente
-        placeEgg();
+            // Limita o jogador para que ele não saia da tela
+            if (playerX < 0) playerX = 0;
+            if (playerX > gameArea.clientWidth - player.clientWidth) playerX = gameArea.clientWidth - player.clientWidth;
+            if (playerY < 0) playerY = 0;
+            if (playerY > gameArea.clientHeight - player.clientHeight) playerY = gameArea.clientHeight - player.clientHeight;
 
-        function startTouch(event) {
-            joystickActive = true;
-            moveJoystick(event);
-        }
+            player.style.left = playerX + "px";
+            player.style.top = playerY + "px";
 
-        function endTouch() {
-            joystickActive = false;
-            joystickInner.style.transform = "translate(0, 0)";
-            playerPosition = { top: playerPosition.top, left: playerPosition.left }; // Para parar o movimento
-        }
-
-        function moveJoystick(event) {
-            const touch = event.touches[0];
-            const joystickRect = joystick.getBoundingClientRect();
-            const offsetX = touch.clientX - joystickRect.left - joystickRect.width / 2;
-            const offsetY = touch.clientY - joystickRect.top - joystickRect.height / 2;
-
-            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-            const angle = Math.atan2(offsetY, offsetX);
-
-            if (distance > 50) {
-                offsetX = 50 * Math.cos(angle);
-                offsetY = 50 * Math.sin(angle);
-            }
-
-            joystickInner.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-
-            // Movimentar o jogador com base na direção do joystick
-            movePlayer(offsetX, offsetY);
-        }
-
-        joystick.addEventListener("touchmove", (event) => {
-            if (joystickActive) {
-                moveJoystick(event);
-            }
-        });
-
-        function movePlayer(offsetX, offsetY) {
-            if (offsetX > 0) playerPosition.left += 2; // Move para a direita
-            else if (offsetX < 0) playerPosition.left -= 2; // Move para a esquerda
-
-            if (offsetY > 0) playerPosition.top += 2; // Move para baixo
-            else if (offsetY < 0) playerPosition.top -= 2; // Move para cima
-
-            updatePlayerPosition();
             checkCollision();
         }
 
-        function updatePlayerPosition() {
-            player.style.top = `${playerPosition.top}px`;
-            player.style.left = `${playerPosition.left}px`;
+        // Detecta toque no joystick
+        function startTouch(event) {
+            joystickActive = true;
         }
 
+        // Move o jogador e o joystick interno enquanto o toque está ativo
+        function moveTouch(event) {
+            if (joystickActive) {
+                const touch = event.touches[0];
+                const joystick = document.getElementById("joystick");
+                const joystickRect = joystick.getBoundingClientRect();
+                const deltaX = touch.clientX - (joystickRect.left + joystickRect.width / 2);
+                const deltaY = touch.clientY - (joystickRect.top + joystickRect.height / 2);
+
+                const angle = Math.atan2(deltaY, deltaX);
+                const dx = Math.cos(angle) * moveSpeed;
+                const dy = Math.sin(angle) * moveSpeed;
+
+                movePlayer(dx, dy);
+
+                // Move o joystick interno conforme o toque
+                joystickInner.style.transform = `translate(${deltaX / 2}px, ${deltaY / 2}px)`;
+            }
+        }
+
+        // Para o movimento quando o toque acaba e centraliza o joystick
+        function endTouch() {
+            joystickActive = false;
+            joystickInner.style.transform = `translate(0, 0)`; // Volta para o centro
+        }
+
+        // Posiciona o ovo aleatoriamente, mas o mantém invisível
+        function placeHiddenEgg() {
+            const randomX = Math.random() * (gameArea.clientWidth - egg.clientWidth);
+            const randomY = Math.random() * (gameArea.clientHeight - egg.clientHeight);
+            egg.style.left = randomX + "px";
+            egg.style.top = randomY + "px";
+        }
+
+        // Verifica se o jogador encontrou o ovo
         function checkCollision() {
             const playerRect = player.getBoundingClientRect();
             const eggRect = egg.getBoundingClientRect();
+
             if (
-                playerRect.x < eggRect.x + eggRect.width &&
-                playerRect.x + playerRect.width > eggRect.x &&
-                playerRect.y < eggRect.y + eggRect.height &&
-                playerRect.y + playerRect.height > eggRect.y
+                playerRect.left < eggRect.left + eggRect.width &&
+                playerRect.left + playerRect.width > eggRect.left &&
+                playerRect.top < eggRect.top + eggRect.height &&
+                playerRect.top + playerRect.height > eggRect.top
             ) {
-                alert("Você encontrou o ovo!");
-                placeEgg(); // Recolocar ovo em um novo local
-                playerPosition = { top: 185, left: 285 }; // Resetar a posição do jogador
-                updatePlayerPosition();
+                if (!eggFound) {
+                    eggFound = true;
+                    winMessage.style.display = "block"; 
+                }
             }
         }
+
+        // Inicializa o jogo
+        function startGame() {
+            placeHiddenEgg(); 
+        }
+
+        startGame(); // Inicia o jogo
     </script>
 </body>
 </html>
